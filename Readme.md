@@ -46,3 +46,16 @@ kafka-console-consumer --bootstrap-server localhost:9092 --topic ticker-HITBTC-X
 ```
 docker compose down
 ```
+
+- Some useful command
+
+
+```
+// output kafka's message from the begining
+kafka-console-consumer --bootstrap-server localhost:9092 --topic ticker-HITBTC --from-beginning
+kafka-console-consumer --bootstrap-server localhost:9092 --topic ticker-BEQUANT --from-beginning
+
+// list kafka's topic
+kafka-topics --bootstrap-server localhost:9092 --list
+
+```

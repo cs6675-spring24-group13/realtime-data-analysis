@@ -171,7 +171,7 @@ async def ticker(t, receipt_timestamp):
     TickerKafka(client_id='Coinbase Trades', **common_kafka_config)
     print(f'Ticker received at {receipt_timestamp}: {t}')
 
-class CustomTradeKafka(TradeKafka):
+class CustomTickerKafka(TickerKafka):
     def topic(self, data: dict) -> str:
         return f"{self.key}-{data['exchange']}"
 
@@ -180,13 +180,24 @@ class CustomTradeKafka(TradeKafka):
 
 def main():
     f = FeedHandler({'log': {'filename': 'feedhandler.log', 'level': 'INFO'}})
-    # cbs = {TRADES: CustomTradeKafka(client_id='Coinbase Trades', **common_kafka_config), L2_BOOK: BookKafka(client_id='Coinbase Book', **common_kafka_config)}
-
-    # f.add_feed(BinanceUS(max_depth=10, channels=[TRADES, L2_BOOK], callbacks=cbs))
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ADA-USDT'], callbacks={TICKER: TickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(HITBTC, channels=[TICKER], symbols=['XLM-USDT'], callbacks={TICKER: TickerKafka(client_id='Hitbtc', **common_kafka_config)})
-    # f.add_feed(BEQUANT, channels=[L2_BOOK], symbols=['ALGO-USDT'], callbacks={L2_BOOK: (book)})
-    # f.add_feed(HITBTC, channels=[L2_BOOK], symbols=['ATOM-USDT'], callbacks={L2_BOOK: (book)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ADA-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BCH-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BSV-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USDC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['EOS-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-BTC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['LTC-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['LTC-BTC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['USDT-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Hitbtc', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-BTC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    
+    f.add_feed(HITBTC, channels=[TICKER], symbols=['XLM-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Hitbtc', **common_kafka_config)})
     
     f.run()
 
