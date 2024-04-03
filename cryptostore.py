@@ -13,6 +13,11 @@ from cryptofeed.exchanges import BinanceUS
 from cryptofeed.defines import ASK, BEQUANT, HITBTC, BID, L2_BOOK, ORDER_INFO, BALANCES, TRANSACTIONS, TICKER, CANDLES, TRADES
 from cryptofeed.callback import BalancesCallback, TransactionsCallback, TickerCallback
 from decimal import Decimal
+import copy
+import random
+import asyncio
+from cryptofeed.types import Ticker
+from cryptofeed.backends.backend import BackendBookCallback, BackendCallback, BackendQueue
 
 
 """
@@ -162,14 +167,30 @@ common_kafka_config = {
         'connections_max_idle_ms': 20000,
     }
 
-async def ticker(t, receipt_timestamp):
-    if t.timestamp is not None:
-        assert isinstance(t.timestamp, float)
-    assert isinstance(t.exchange, str)
-    assert isinstance(t.bid, Decimal)
-    assert isinstance(t.ask, Decimal)
-    TickerKafka(client_id='Coinbase Trades', **common_kafka_config)
-    print(f'Ticker received at {receipt_timestamp}: {t}')
+class CustomTickerKafkaAmplify(TickerKafka):
+    def topic(self, data: dict) -> str:
+        return f"{self.key}-{data['exchange']}"
+
+    def partition_key(self, data: dict) -> Optional[bytes]:
+        return f"{data['symbol']}".encode('utf-8')
+    
+    async def __call__(self, dtype: Ticker, receipt_timestamp: float):
+      # Amplify and modify the data
+      amplified_messages = [copy.deepcopy(dtype) for _ in range(10)]  # Amplify by 10 times
+      
+      for message in amplified_messages:
+          new_bid = message.bid * Decimal(random.uniform(0.995, 1.005))
+          new_ask = message.ask * Decimal(random.uniform(0.995, 1.005))
+          
+          data = message.to_dict(numeric_type=float, none_to=None)
+          if not message.timestamp:
+              data['timestamp'] = receipt_timestamp
+          data['receipt_timestamp'] = receipt_timestamp
+          data['bid'] = new_bid
+          data['ask'] = new_ask
+          
+          # Use the parent class's write method to send the data to Kafka
+          await self.write(data)
 
 class CustomTickerKafka(TickerKafka):
     def topic(self, data: dict) -> str:
@@ -177,27 +198,46 @@ class CustomTickerKafka(TickerKafka):
 
     def partition_key(self, data: dict) -> Optional[bytes]:
         return f"{data['symbol']}".encode('utf-8')
+    
+    async def __call__(self, dtype: Ticker, receipt_timestamp: float):
+      # Amplify and modify the data
+      amplified_messages = [copy.deepcopy(dtype) for _ in range(10)]  # Amplify by 10 times
+      
+      for message in amplified_messages:
+          new_bid = message.bid * Decimal(random.uniform(0.995, 1.005))
+          new_ask = message.ask * Decimal(random.uniform(0.995, 1.005))
+          
+          data = message.to_dict(numeric_type=float, none_to=None)
+          if not message.timestamp:
+              data['timestamp'] = receipt_timestamp
+          data['receipt_timestamp'] = receipt_timestamp
+          data['bid'] = new_bid
+          data['ask'] = new_ask
+          
+          # Use the parent class's write method to send the data to Kafka
+          await self.write(data)
+
 
 def main():
     f = FeedHandler({'log': {'filename': 'feedhandler.log', 'level': 'INFO'}})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ADA-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BCH-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BSV-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USDC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['EOS-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-BTC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['LTC-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['LTC-BTC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['USDT-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Hitbtc', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-USD'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
-    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-BTC'], callbacks={TICKER: CustomTickerKafka(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ADA-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BCH-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BSV-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USD'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['BTC-USDC'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['EOS-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-BTC'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['ETH-USD'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['LTC-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['LTC-BTC'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['USDT-USD'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Hitbtc', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-USD'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-USDT'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
+    f.add_feed(BEQUANT, channels=[TICKER], symbols=['XRP-BTC'], callbacks={TICKER: CustomTickerKafkaAmplify(client_id='Bequant', **common_kafka_config)})
     
-    f.add_feed(HITBTC, channels=[TICKER], symbols=['XLM-USDT'], callbacks={TICKER: CustomTickerKafka(client_id='Hitbtc', **common_kafka_config)})
+    # f.add_feed(HITBTC, channels=[TICKER], symbols=['XLM-USDT'], callbacks={TICKER: AmplifiedTickerKafka(client_id='Hitbtc', **common_kafka_config)})
     
     f.run()
 
