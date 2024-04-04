@@ -18,6 +18,7 @@ services:
     depends_on:
       - zookeeper
     ports:
+      - "9101:9101"
       - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
@@ -29,9 +30,25 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "ticker-HITBTC-XLM-USDT:1:1,ticker-BEQUANT-ADA-USDT:1:1,ticker-HITBTC-XLM-USDT:1:1,ticker-BEQUANT-ADA-USDT:1:1"
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_CREATE_TOPICS: "ticker-HITBTC:1:1,ticker-BEQUANT:1:1"
     networks:
       - hadoop_network  
+
+  kafka-exporter:
+    image: bitnami/kafka-exporter:latest
+    container_name: kafka-exporter
+    depends_on:
+      - kafka
+    ports:
+      - "9308:9308"
+    environment:
+      JMX_PORT: 9101
+      KAFKA_BROKER: kafka:9092
+    command: ["--kafka.server=kafka:9092", "--kafka.version=3.6.0"]
+    networks:
+      - hadoop_network   
 
   cryptofeed-app:
     build: .
