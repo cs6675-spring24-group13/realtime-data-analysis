@@ -18,7 +18,7 @@ docker-compose up -d
 - Log into the docker and check kafka's consumer
 
 ```
-kafka-console-consumer --bootstrap-server localhost:9092 --topic ticker-HITBTC-XLM-USDT --from-beginning
+kafka-console-consumer --bootstrap-server localhost:9092 --topic ticker-BEQUANT --from-beginning
 ```
 
 - You can see the data in the consumer
@@ -59,3 +59,8 @@ kafka-console-consumer --bootstrap-server localhost:9092 --topic ticker-BEQUANT 
 kafka-topics --bootstrap-server localhost:9092 --list
 
 ```
+
+
+- Caution!
+
+kafka-exporter failed at first because kafka is not starting completely, be sure to restart kafka-exporter when kafka is OK
