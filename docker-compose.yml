@@ -51,7 +51,7 @@ services:
       - hadoop_network   
 
   cryptofeed-app:
-    build: .
+    image: wuyuefrank/cryptofeed-app:latest
     container_name: cryptofeed-app
     volumes:
       - .:/usr/src/app
